@@ -39,6 +39,8 @@ class CityscapesDataset(Dataset):
 
         self.img_list = glob(osp.join(self.root_dir, 'leftImg8bit', self.split, '*', '*_leftImg8bit.png'))
 
+        # class name 
+        # class palette 
     
     def __len__(self):
         return len(self.img_list)
@@ -55,8 +57,8 @@ class CityscapesDataset(Dataset):
         """
 
         img_path = self.img_list[idx]
-        gt_path = img_path.replace('_leftImg8bit.png', '_gtFine_labelTrainIds.png')
-        gt_path = gt_path.replace('/leftImg8bit', '/gtFine')
+        gt_path = img_path.replace('leftImg8bit', 'gtFine')
+        gt_path = gt_path.replace('.png', '_labelTrainIds.png')
         
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
