@@ -51,8 +51,7 @@ class CityscapesDataset(Dataset):
             idx (int): data index
 
         Returns:
-            img (np.arr) 
-            gt (np.arr) 
+            sample (dict, {'image': np.arr, 'segmap': np.arr})
         """
 
         img_path = self.img_list[idx]
@@ -69,9 +68,3 @@ class CityscapesDataset(Dataset):
             sample = self.transform(sample)
 
         return sample
-
-
-
-            
-
-            
