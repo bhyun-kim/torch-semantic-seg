@@ -53,18 +53,22 @@ class CityscapesDataset(Dataset):
         Returns:
             img (np.arr) 
             gt (np.arr) 
-        
         """
 
         img_path = self.img_list[idx]
-        gt_path = img_path.replace('leftImg8bit', 'gtFine')
-        gt_path = gt_path.replace('.png', '_labelTrainIds.png')
+        segmap_path = img_path.replace('leftImg8bit', 'gtFine')
+        segmap_path = segmap_path.replace('.png', '_labelTrainIds.png')
         
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        gt = cv2.imread(gt_path, cv2.IMREAD_UNCHANGED)
-        
-        return img, gt 
+        segmap = cv2.imread(segmap_path, cv2.IMREAD_UNCHANGED)
+
+        sample = {'image': img, 'segmap': segmap} 
+
+        if self.transform:
+            sample = self.transform(sample)
+
+        return sample
 
 
 
