@@ -51,7 +51,7 @@ class CityscapesDataset(Dataset):
             idx (int): data index
 
         Returns:
-            dictionary: {'image': np.arr, 'segmap': np.arr}
+            sample (dict, {'image': np.arr, 'segmap': np.arr})
         """
 
         img_path = self.img_list[idx]
