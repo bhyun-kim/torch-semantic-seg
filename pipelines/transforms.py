@@ -1,17 +1,19 @@
-# [V] rescale 
-# [V] random rescale 
-# [] random crop 
+
+# To dos 
+# [v] rescale 
+# [v] random rescale 
+# [v] random crop 
 # [] random flipLR
 # [] random flipUD
-# [] dialation 
 # [] negative sample 
 
-# [] to tensor 
-# [] normalization 
+# [v] to tensor 
+# [v] normalization 
 
 import random
 
 import cv2 
+import torch
 
 import numpy as np 
 
@@ -20,6 +22,7 @@ import numpy as np
 References: 
 
 [1] https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
+[2] https://mmcv-jm.readthedocs.io/en/stable/_modules/mmcv/image/normalize.html
 """
 
 
@@ -44,6 +47,9 @@ class Rescale(object):
     def __call__(self, sample):
         """
         Args:
+            sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
+        
+        Returns:
             sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
         """
         image, segmap = sample['image'], sample['segmap']
@@ -84,6 +90,9 @@ class RandomRescale(object):
         """
         Args:
             sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
+        
+        Returns:
+            sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
         """
         output_size = random.randint(self.output_range[0], self.output_range[1])
         rescale = Rescale(output_size)
@@ -109,6 +118,13 @@ class RandomCrop(object):
             self.output_size = output_size
 
     def __call__(self, sample):
+        """
+        Args:
+            sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
+        
+        Returns:
+            sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
+        """
         image, segmap = sample['image'], sample['segmap']
 
         h, w = image.shape[:2]
@@ -124,6 +140,61 @@ class RandomCrop(object):
                         left: left + new_w]
 
         return {'image': image, 'segmap': segmap}
+
+class Normalization(object):
+    """Normalize image 
+    """
+    def __init__(self, mean, std):
+        """
+        Args:
+            mean (tuple, list): (R, G, B)
+            std (tuple, list): (R, G, B)
+        """
+        assert isinstance(mean, (tuple, list))
+        assert isinstance(std, (tuple, list))
+
+        mean, std = np.array(mean), np.array(std)
+        self.mean = np.float64(mean.reshape(1, -1))
+        self.stdinv = 1 / np.float64(std.reshape(1, -1))
+        print(f'mean: {self.mean}, stdinv: {self.stdinv}')
+        
+
+    def __call__(self, sample):
+        """
+        Args:
+            sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
+        
+        Returns:
+            sample (dict, {image: np.arr (H x W x C, float32), segmap: np.arr (H x W, uint8)})
+        """
+        image, segmap = sample['image'], sample['segmap']
+        image = np.float32(image) if image.dtype != np.float32 else image.copy()
+
+        cv2.subtract(image, self.mean, image)
+        cv2.multiply(image, self.stdinv, image)
+
+        return {'image': image, 'segmap': segmap}
+
+
+class ToTensor(object):
+    """Convert ndarrays in sample to Tensors."""
+
+    def __call__(self, sample):
+        """
+        Args:
+            sample (dict, {image: np.arr (H x W x C), segmap: np.arr (H x W)})
+        
+        Returns:
+            sample (dict, {image: torch.tensor (C x H x W), segmap: torch.tensor (H x W)})
+        """
+        image, segmap = sample['image'], sample['segmap']
+
+        # swap color axis because
+        # numpy image: H x W x C
+        # torch image: C x H x W
+        image = image.transpose((2, 0, 1))
+        return {'image': torch.from_numpy(image),
+                'segmap': torch.from_numpy(segmap)}
 
 
 
