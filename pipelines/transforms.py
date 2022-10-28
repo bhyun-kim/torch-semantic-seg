@@ -4,7 +4,7 @@
 # [v] random rescale 
 # [v] random crop 
 # [v] random flipLR
-# [] random flipUD
+# [v] random flipUD
 # [] negative sample 
 
 # [v] to tensor 
