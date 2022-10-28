@@ -3,7 +3,7 @@
 # [v] rescale 
 # [v] random rescale 
 # [v] random crop 
-# [] random flipLR
+# [v] random flipLR
 # [] random flipUD
 # [] negative sample 
 
@@ -35,7 +35,7 @@ class Rescale(object):
         """
         Args:
             output_size (tuple or int): Desired output size. If tuple, output is
-                matched to output_size. If int, smaller of image edges is matched
+                matched to output_size(H x W). If int, smaller of image edges is matched
                 to output_size keeping aspect ratio the same.
         """
 
@@ -107,8 +107,8 @@ class RandomCrop(object):
     def __init__(self, output_size):
         """
         Args:
-            output_size (tuple or int): Desired output size. If int, square crop
-            is made.
+            output_size (tuple or int): Desired output size. If tuple, output is
+                matched to output_size(H x W). If int, square crop is made.
         """
         assert isinstance(output_size, (int, tuple))
         if isinstance(output_size, int):
@@ -140,6 +140,73 @@ class RandomCrop(object):
                         left: left + new_w]
 
         return {'image': image, 'segmap': segmap}
+
+
+
+class RandomFlipLR(object):
+    """
+    Horizontally flip the image and segmap.
+    """
+
+    def __init__(self, prob=0.5):
+        """
+        Args:
+            prob (float): The flipping probability. Between 0 and 1.
+        """
+        self.prob = prob
+        assert prob >=0 and prob <= 1
+
+    def __call__(self, sample):
+        """
+        Args:
+            sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
+        
+        Returns:
+            sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
+        """
+        image, segmap = sample['image'], sample['segmap']
+
+        if np.random.rand() < self.prob:
+            # flip image
+            image = cv2.flip(image, 1)
+            # flip segmap
+            segmap = cv2.flip(segmap, 1)
+
+        return {'image': image, 'segmap': segmap}
+
+
+
+class RandomFlipUD(object):
+    """
+    Vertically flip the image and segmap.
+    """
+
+    def __init__(self, prob=0.5):
+        """
+        Args:
+            prob (float): The flipping probability. Between 0 and 1.
+        """
+        self.prob = prob
+        assert prob >=0 and prob <= 1
+
+    def __call__(self, sample):
+        """
+        Args:
+            sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
+        
+        Returns:
+            sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
+        """
+        image, segmap = sample['image'], sample['segmap']
+
+        if np.random.rand() < self.prob:
+            # flip image
+            image = cv2.flip(image, 0)
+            # flip segmap
+            segmap = cv2.flip(segmap, 0)
+
+        return {'image': image, 'segmap': segmap}
+
 
 class Normalization(object):
     """Normalize image 
