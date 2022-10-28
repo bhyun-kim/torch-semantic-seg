@@ -32,6 +32,9 @@ class CityscapesDataset(Dataset):
                             └ ***_gtFine_labelTrainIds.png
                 
         """
+
+        # class name 
+        # class palette 
         
         self.root_dir = root_dir
         self.transform = transform
@@ -39,8 +42,7 @@ class CityscapesDataset(Dataset):
 
         self.img_list = glob(osp.join(self.root_dir, 'leftImg8bit', self.split, '*', '*_leftImg8bit.png'))
 
-        # class name 
-        # class palette 
+        
     
     def __len__(self):
         return len(self.img_list)
