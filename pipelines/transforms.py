@@ -40,7 +40,8 @@ class Rescale(object):
         """
 
         assert isinstance(output_size, (int, tuple))
-        # assert tuple must have two elements, height and width 
+        if isinstance(output_size, tuple):
+            assert len(output_size) == 2
         self.output_size = output_size
 
 
@@ -79,7 +80,7 @@ class RandomRescale(object):
     def __init__(self, output_range):
         """
         Args:
-            output_range (tuple): Desired output range. 
+            output_range (tuple, (min, max)): Desired output range. 
         """
 
         assert isinstance(output_range, (tuple))
@@ -219,6 +220,8 @@ class Normalization(object):
         """
         assert isinstance(mean, (tuple, list))
         assert isinstance(std, (tuple, list))
+        assert len(mean) == 3
+        assert len(std) == 3
 
         mean, std = np.array(mean), np.array(std)
         self.mean = np.float64(mean.reshape(1, -1))
