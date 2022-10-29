@@ -14,11 +14,13 @@ References:
 class CityscapesDataset(Dataset):
     """Cityscapes dataset."""
 
-    def __init__(self, root_dir, split='train', transform=None):
+    def __init__(self, root_dir, split='train', transform=None, classes=None, palette=None):
         """
         Args: 
             root_dir (str): Directory with all the images.
             split (str): The dataset split, supports 'train', 'val', or 'test'
+            classes (tuple)
+            palette (list)
 
         Folder structure:
             root_dir 
@@ -33,14 +35,29 @@ class CityscapesDataset(Dataset):
                 
         """
 
-        # class name 
-        # class palette 
         
         self.root_dir = root_dir
         self.transform = transform
         self.split = split
 
         self.img_list = glob(osp.join(self.root_dir, 'leftImg8bit', self.split, '*', '*_leftImg8bit.png'))
+
+        if classes == None : 
+            self.classes = ('road', 'sidewalk', 'building', 'wall', 'fence', 'pole',
+                'traffic light', 'traffic sign', 'vegetation', 'terrain', 'sky',
+                'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
+                'bicycle')
+        else :
+            self.classes = classes 
+
+        if palette == None:
+            self.palette = [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
+                [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
+                [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
+                [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100],
+                [0, 80, 100], [0, 0, 230], [119, 11, 32]]
+        else:
+            self.palette = palette
 
         
     
