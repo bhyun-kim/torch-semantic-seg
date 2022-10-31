@@ -14,7 +14,9 @@ References:
 class CityscapesDataset(Dataset):
     """Cityscapes dataset."""
 
-    def __init__(self, root_dir, split='train', transform=None, classes=None, palette=None):
+    def __init__(
+        self, root_dir, split='train', transform=None, classes=None, palette=None, 
+        img_suffix = '_leftImg8bit.png', seg_suffix = '_gtFine_labelTrainIds.png'):
         """
         Args: 
             root_dir (str): Directory with all the images.
@@ -40,8 +42,8 @@ class CityscapesDataset(Dataset):
         self.transform = transform
         self.split = split
 
-        self.img_list = glob(osp.join(self.root_dir, 'leftImg8bit', self.split, '*', '*_leftImg8bit.png'))
-
+        self.img_list = glob(osp.join(self.root_dir, 'leftImg8bit', self.split, '*', f'*{img_suffix}'))
+        self.seg_suffix = seg_suffix
         if classes == None : 
             self.classes = ('road', 'sidewalk', 'building', 'wall', 'fence', 'pole',
                 'traffic light', 'traffic sign', 'vegetation', 'terrain', 'sky',
@@ -59,7 +61,6 @@ class CityscapesDataset(Dataset):
         else:
             self.palette = palette
 
-        
     
     def __len__(self):
         return len(self.img_list)
@@ -75,7 +76,7 @@ class CityscapesDataset(Dataset):
 
         img_path = self.img_list[idx]
         segmap_path = img_path.replace('leftImg8bit', 'gtFine')
-        segmap_path = segmap_path.replace('.png', '_labelTrainIds.png')
+        segmap_path = segmap_path.replace('.png', self.seg_suffix.replace('_gtFine', ''))
         
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
