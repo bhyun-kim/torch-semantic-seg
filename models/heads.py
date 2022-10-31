@@ -24,7 +24,6 @@ class Interpolate(nn.Module):
             recompute_scale_factor=recompute_scale_factor,
             antialias=antialias
         )
-        print(self.args)
 
     def forward(self, input):
         output = F.interpolate(input=input, **self.args)
