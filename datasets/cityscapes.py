@@ -23,6 +23,8 @@ class CityscapesDataset(Dataset):
             split (str): The dataset split, supports 'train', 'val', or 'test'
             classes (tuple)
             palette (list)
+            img_suffix (str)
+            seg_suffix (str) 
 
         Folder structure:
             root_dir 
