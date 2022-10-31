@@ -44,7 +44,7 @@ class CityscapesDataset(Dataset):
         self.transform = transform
         self.split = split
 
-        self.img_list = glob(osp.join(self.root_dir, 'leftImg8bit', self.split, '*', f'*{img_suffix}'))
+        self.img_list = glob(osp.join(self.root_dir, 'leftImg8bit', self.split, '**', f'*{img_suffix}'), recursive=True)
         self.seg_suffix = seg_suffix
         if classes == None : 
             self.classes = ('road', 'sidewalk', 'building', 'wall', 'fence', 'pole',
