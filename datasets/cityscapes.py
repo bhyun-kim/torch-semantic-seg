@@ -77,6 +77,7 @@ class CityscapesDataset(Dataset):
         """
 
         img_path = self.img_list[idx]
+        # print(img_path)
         segmap_path = img_path.replace('leftImg8bit', 'gtFine')
         segmap_path = segmap_path.replace('.png', self.seg_suffix.replace('_gtFine', ''))
         
