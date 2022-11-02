@@ -1,4 +1,3 @@
-
 # To dos 
 # [v] rescale 
 # [v] random rescale 
@@ -17,14 +16,12 @@ import torch
 
 import numpy as np 
 
-
 """
 References: 
 
 [1] https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
 [2] https://mmcv-jm.readthedocs.io/en/stable/_modules/mmcv/image/normalize.html
 """
-
 
 
 class Rescale(object): 
@@ -226,7 +223,6 @@ class Normalization(object):
         mean, std = np.array(mean), np.array(std)
         self.mean = np.float64(mean.reshape(1, -1))
         self.stdinv = 1 / np.float64(std.reshape(1, -1))
-        print(f'mean: {self.mean}, stdinv: {self.stdinv}')
         
 
     def __call__(self, sample):
@@ -262,6 +258,9 @@ class ToTensor(object):
         # swap color axis because
         # numpy image: H x W x C
         # torch image: C x H x W
+        image = np.float32(image) if image.dtype != np.float32 else image.copy()
+        segmap = np.int64(segmap) if segmap.dtype != np.int64 else segmap.copy()
+        
         image = image.transpose((2, 0, 1))
         return {'image': torch.from_numpy(image),
                 'segmap': torch.from_numpy(segmap)}
