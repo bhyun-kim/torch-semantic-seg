@@ -8,7 +8,7 @@ class Interpolate(nn.Module):
                  mode='nearest', 
                  align_corners=None,
                  recompute_scale_factor=None,
-                 antialias=True
+                 antialias=False
     ):
         """
         Args:
@@ -27,4 +27,4 @@ class Interpolate(nn.Module):
 
     def forward(self, input):
         output = F.interpolate(input=input, **self.args)
-        return F.log_softmax(output, 1)
+        return output
