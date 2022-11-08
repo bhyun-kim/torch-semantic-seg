@@ -358,14 +358,17 @@ class CGNet(nn.Module):
         #init weights
         for m in self.modules():
             classname = m.__class__.__name__
-            if classname.find('Conv2d')!= -1:
-                nn.init.kaiming_normal_(m.weight)
+            if classname in ['Conv2d', 'Linear']:
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
                 if m.bias is not None:
                     m.bias.data.zero_()
-                elif classname.find('ConvTranspose2d')!= -1:
-                    nn.init.kaiming_normal_(m.weight)
-                    if m.bias is not None:
-                        m.bias.data.zero_()
+
+            elif classname in ['BatchNorm2d']:
+                nn.init.constant_(m.weight, val=1)
+
+            elif classname in ['PReLU']:
+                nn.init.constant_(m.weight, val=0)
+                
 
     def forward(self, input):
         """
@@ -379,7 +382,7 @@ class CGNet(nn.Module):
         # input injection 
         inp1 = self.inject1(input)
         inp2 = self.inject2(input)
-
+        
         # stage 1
         for i, layer in enumerate(self.stage1):
             if i==0:
@@ -393,8 +396,10 @@ class CGNet(nn.Module):
         for i, layer in enumerate(self.stage2):
             if i==0:
                 output2_0 = layer(output1_cat)
-            else:
+            elif i==1:
                 output2 = layer(output2_0)
+            else:
+                output2 = layer(output2)
 
         output2_cat = self.bn2(torch.cat([output2, output2_0, inp2], 1))
 
@@ -402,9 +407,11 @@ class CGNet(nn.Module):
         for i, layer in enumerate(self.stage3):
             if i==0:
                 output3_0 = layer(output2_cat)
-            else:
+            elif i==1:
                 output3 = layer(output3_0)
+            else:
+                output3 = layer(output3)
 
         output3_cat = self.bn3(torch.cat([output3_0, output3], 1))
-
-        return self.classifier(output3_cat)
+        output = self.classifier(output3_cat)
+        return output
