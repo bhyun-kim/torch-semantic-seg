@@ -13,7 +13,11 @@ from models import *
 from models.encoders import *
 from models.decoders import * 
 from models.heads import *
+
 from torch.optim import *
+from torch.optim.lr_scheduler import *
+
+from runners.supervised_learning import *
 
 
 def build_pipelines(cfg_pipelines):
@@ -103,12 +107,7 @@ def build_loss(cfg):
     """
     loss_type = cfg.pop('type')
 
-    if cfg:
-        loss = globals()[loss_type](**cfg)
-    else:
-        loss = globals()[loss_type]()
-    
-    return loss
+    return globals()[loss_type](**cfg)
 
 def build_model(cfg):
     """Build model from config 
@@ -131,8 +130,12 @@ def build_model(cfg):
     else: 
         decoder = None 
 
-    head_type = cfg['head'].pop('type')
-    head = globals()[head_type](**cfg['head'])
+    if cfg['head']:
+
+        head_type = cfg['head'].pop('type')
+        head = globals()[head_type](**cfg['head'])
+    else:
+        head = None
 
     return ModelWrapper(encoder=encoder, decoder=decoder, head=head)
 
@@ -177,3 +180,31 @@ def build_loaders(cfg):
         loaders[split] = build_data_loader(_cfg['loader'], dataset) 
 
     return loaders 
+
+
+def build_runner(cfg):
+    """Build runner from config 
+    Args: 
+        cfg (dict): runner configuration
+    
+    Returns:
+        runner (obj)
+    """
+
+    runner_type = cfg.pop('type')
+
+    return globals()[runner_type](**cfg)
+
+def build_lr_config(cfg, optim):
+    """Build lr_config
+    Args: 
+        cfg (dict): learning rate config
+        optim (torch.optim)
+    
+    Returns:
+        torch.optim.lr_scheduler 
+    """
+
+    lr_scheduler_type = cfg.pop('type')
+
+    return globals()[lr_scheduler_type](optimizer=optim, **cfg)

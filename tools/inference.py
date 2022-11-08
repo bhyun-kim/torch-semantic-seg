@@ -56,7 +56,7 @@ def main():
 
     # init_model 
     model = build_model(cfg['MODEL'])
-    model.load_state_dict(torch.load('/home/user/UOS-SSaS Dropbox/05. Data/03. Checkpoints/024. Korean Electricity/10.31.2022/checkpoint_6.pth'))
+    model.load_state_dict(torch.load('/home/user/UOS-SSaS Dropbox/05. Data/03. Checkpoints/00. Benchmarks/01. cityscapes/cgnet/11.02.2022/checkpoint_iter_56000.pth'))
     model.to(device)
     
 

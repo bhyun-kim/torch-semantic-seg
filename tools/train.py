@@ -11,11 +11,12 @@ import json
 import torch 
 import torchvision as tv 
 
+from torchsummary import summary
+
 from importlib import import_module
 from tqdm import tqdm
 
 from utils import * 
-from evaluate import * 
 from builders.builders import *  
 
 from datetime import datetime
@@ -24,7 +25,6 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description='Train a segmentor')
     parser.add_argument('config', help='train config file path')
-    parser.add_argument('--work-dir', help='the dir to save logs and models')
 
     args = parser.parse_args()
 
@@ -32,7 +32,7 @@ def parse_args():
 
 
 def main():
-    from pprint import pprint
+    from pprint import pprint, pformat
     args = parse_args()
 
     # build config 
@@ -62,61 +62,42 @@ def main():
     # Print paths
     logger.info('Log file is %s' % log_file)
     
-    logger.info(pprint(cfg, width=100))
+    logger.info(pformat(pprint(cfg, width=100)))
 
     # select device 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     ### build data loaders 
     data_loaders = build_loaders(cfg['DATA_LOADERS']) 
+    # print(len(data_loaders))
 
     # build loss 
     criterion = build_loss(cfg['LOSS'])
-    criterion.weight_to(device)
+    criterion.to(device)
 
     # build model     
     model = build_model(cfg['MODEL'])    
+    logger.info(summary(model))
     model.to(device)
 
     # build optimizer 
     optimizer = build_optimizer(cfg['OPTIMIZER'], model)
+    if  cfg['LR_CONFIG']:
+        scheduler = build_lr_config(cfg['LR_CONFIG'], optimizer)
 
-    # build runner -----------------------------------------------------
-    for epoch in range(cfg['EPOCHS']): # loop over the dataset multiple times
+    runner = build_runner(cfg['RUNNER'])
+    runner.train(
+        cfg,
+        model, 
+        device, 
+        logger, 
+        optimizer, 
+        criterion, 
+        data_loaders,
+        scheduler
+    )
 
-        running_loss = 0.0
-        
-        for i, data in enumerate(data_loaders['train'], 0):
-            # get the inputs; data is a list of [inputs, labels]
-            inputs, labels = data['image'], data['segmap']
-
-            inputs, labels = inputs.to(device), labels.to(device)
-
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward + backward + optimize
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            
-            loss.backward()
-            optimizer.step()
-
-            # print statistics
-            running_loss += loss.item()
-            if i % 50 == 49:    # print every 50 mini-batches
-                logger.info(f'[Epoch: {epoch + 1}, Iteration: {i + 1:5d}] Loss: {running_loss / 50:.3f}')
-                running_loss = 0.0
-
-        # evaluate(model, data_loaders['val'], device, 19) 
-        if epoch % 5 == 0:
-            evaluate(model, data_loaders['val'], device, logger)  
-            save_path = osp.join(cfg['WORK_DIR'], f'checkpoint_{epoch}.pth')
-            torch.save(model.state_dict(), save_path)
-
-        
-
-    logger.info('Finished Training')
+    
         
 if __name__ == '__main__':
     main()

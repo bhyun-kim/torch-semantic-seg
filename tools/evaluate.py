@@ -1,7 +1,7 @@
 import torch 
-import tqdm
+from tqdm import tqdm
 
-def evaluate(model, dataloader, device, logger):
+def evaluate(model, dataloader, device, logger, ignore_idx=255.):
     # again no gradients needed
     model.eval()
 
@@ -23,8 +23,12 @@ def evaluate(model, dataloader, device, logger):
 
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
-            predictions = torch.argmax(outputs, dim=1)
-            category_vector = torch.flatten(predictions * num_classes + labels)
+            predictions = torch.argmax(outputs, dim=1).flatten()
+            labels = labels.flatten()
+            predictions = predictions[labels != ignore_idx]
+            labels = labels[labels != ignore_idx]
+            
+            category_vector = predictions * num_classes + labels
             category_vector = category_vector.detach().cpu().numpy()
 
             category_vectors.append(category_vector)
