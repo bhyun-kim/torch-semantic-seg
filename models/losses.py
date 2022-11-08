@@ -9,22 +9,23 @@ class CrossEntropyLoss(nn.Module):
                 ignore_idx=255):
         super().__init__()
 
-        self.args = dict(
-            weight=torch.tensor(weight),
-            reduction=reduction,
-            ignore_index=ignore_idx
-        )
+        if weight: 
+            weight = torch.tensor(weight)
+        
+        self.loss = nn.CrossEntropyLoss(weight=weight, ignore_index=ignore_idx, reduction='none')
 
-    def weight_to(self, device):
-        self.args['weight'] = self.args['weight'].to(device)
+        self.reduction = reduction
+        self.ignore_idx = ignore_idx
+        
+    def forward(self, outputs, targets):
+        # print(outputs.shape)
+        # print(outputs[0, 5, 500:508, 800:808])
+        softmax = F.softmax(outputs, dim=1)
+        # print(softmax[0, :, 500, 800])
+        loss = self.loss(outputs, targets)
 
+        if self.reduction == 'mean':
+            num_element = targets.numel() - (targets == self.ignore_idx).sum().item()
+            loss = loss.sum() / num_element
 
-    def forward(self, 
-                cls_score,
-                label):
-
-        loss_cls = F.cross_entropy(cls_score, 
-                                   label,
-                                   **self.args)
-
-        return loss_cls
+        return loss
