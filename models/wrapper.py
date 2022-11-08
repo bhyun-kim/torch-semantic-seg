@@ -15,12 +15,10 @@ class ModelWrapper(nn.Module):
 
     def forward(self, input):
         
-        enc_feat = self.encoder(input)
+        feat = self.encoder(input)
 
         if self.decoder : 
-            dec_feat = self.decoder(enc_feat)
-            feat_out = self.head(dec_feat) 
-        else : 
-            feat_out = self.head(enc_feat)
-
-        return feat_out
+            feat = self.decoder(feat)
+        if self.head :
+            feat = self.head(feat) 
+        return feat
