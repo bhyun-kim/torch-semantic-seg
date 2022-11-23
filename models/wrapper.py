@@ -13,12 +13,18 @@ class ModelWrapper(nn.Module):
         self.decoder = decoder 
         self.head = head 
 
-    def forward(self, input):
+    def forward(self, input, labels=None):
         
-        feat = self.encoder(input)
+        enc_output = self.encoder(input)
 
         if self.decoder : 
-            feat = self.decoder(feat)
+            dec_output = self.decoder(enc_output)
+        else: 
+            dec_output = enc_output
+
         if self.head :
-            feat = self.head(feat) 
-        return feat
+            output = self.head(dec_output, labels) 
+        else: 
+            output = dec_output
+            
+        return output

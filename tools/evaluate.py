@@ -5,8 +5,19 @@ from tqdm import tqdm
 from prettytable import PrettyTable
 
 
-def evaluate(model, dataloader, device, logger, ignore_idx=255.):
-    # again no gradients needed
+def evaluate(model, dataloader, device, metric='miou',logger=None, ignore_idx=255.):
+    """evaluate dataset
+    Args: 
+        model (torch.nn.Module)
+        dataloader (torch.DataLoader)
+        device (torch.device)
+        metric (str): performance metric, default='miou'
+        logger (logging.logger)
+        ignore_idx (idx)
+    
+    """
+    # no gradients needed
+    supported_metrices = ['miou']
     model.eval()
 
     if hasattr(dataloader.dataset, 'datasets'):
@@ -32,8 +43,13 @@ def evaluate(model, dataloader, device, logger, ignore_idx=255.):
 
         cm = calculate_cm(preds, gts, num_classes, ignore_idx)
 
-        calculate_miou(cm, logger=logger, classes=classes) 
+        if metric=='miou':
+            calculate_miou(cm, logger=logger, classes=classes) 
+        else: 
+            print(f'The provided metric {metric} is not supported.')
+            print(f'Choose one of {supported_metrices}')
 
+    # gradients needed for training
     model.train()
 
 
@@ -60,7 +76,6 @@ def calculate_cm(preds, gts, num_classes, ignore_idx):
         gt = gt[gt != ignore_idx]
         
         category_vector = gt * num_classes + pred
-        category_vector = category_vector.detach().cpu().numpy()
 
         category_vectors.append(category_vector)
 
@@ -102,7 +117,6 @@ def calculate_miou(cm, logger=None, classes=None):
 
 
     if logger: 
-
         logger.info('\n'+iou_table.get_string())
         logger.info('\n'+miou_table.get_string())
     else: 
