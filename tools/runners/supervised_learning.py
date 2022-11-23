@@ -16,9 +16,9 @@ class SupervisedLearner(object):
              device, 
              logger, 
              optimizer, 
-             criterion, 
              data_loaders,
-             scheduler):
+             scheduler,
+             is_dist = None):
 
         """
         Args: 
@@ -31,82 +31,51 @@ class SupervisedLearner(object):
         eval_interval = cfg['EVALUATION']['interval']
         checkpoint_interval = cfg['CHECKPOINT']['interval']
 
-        if self.run_by == 'epoch':
+    
+        running_loss = 0.0
+        generator = iter(data_loaders['train'])
 
-            for epoch in range(cfg['EPOCHS']): # loop over the dataset multiple times
+        for i in range(cfg['ITERATION']): # loop over the dataset multiple times
+            
+            optimizer.zero_grad()
+            
+            try:
+                data = next(generator)
 
+            except StopIteration: 
+
+                generator = iter(data_loaders['train'])
+                data = next(generator)
+            
+
+            inputs, labels = data['image'], data['segmap']
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            loss = model(inputs, labels)
+            loss.backward()
+            running_loss += loss.item()
+
+            optimizer.step()
+            scheduler.step()
+
+            if i % logger_interval == logger_interval-1:
+                logger.info(f'[Iteration: {i + 1:5d}] Loss: {running_loss / logger_interval:.3f}')
                 running_loss = 0.0
-                
-                for i, data in enumerate(data_loaders['train'], 0):
-                    # get the inputs; data is a list of [inputs, labels]
-                    inputs, labels = data['image'], data['segmap']
 
-                    inputs, labels = inputs.to(device), labels.to(device)
+            if is_dist: 
+                rank = model.device_ids[0]
 
-                    # zero the parameter gradients
-                    optimizer.zero_grad()
+                if rank == 0: 
 
-                    # forward + backward + optimize
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
-                    
-                    loss.backward()
-                    optimizer.step()
-                    scheduler.step()
+                    if i % eval_interval == eval_interval-1:
+                        evaluate(model, data_loaders['val'], device, logger)  
 
-                    # print statistics
-                    running_loss += loss.item()
-                    
-                    if i % logger_interval == logger_interval-1:
-                        logger.info(
-                            f'[Epoch: {epoch + 1:5d}, Iteration: {i + 1:5d}] Loss: {running_loss / logger_interval:.3f}'
-                            )
-                        running_loss = 0.0
+                    if i % checkpoint_interval == checkpoint_interval-1:
+                        save_path = osp.join(cfg['WORK_DIR'], f'checkpoint_iter_{i+1}.pth')
+                        torch.save(model.state_dict(), save_path)
 
-                if i % eval_interval == eval_interval-1:
-                    evaluate(model, data_loaders['val'], device, logger)  
-
-                if i % checkpoint_interval == checkpoint_interval-1:
-                    save_path = osp.join(cfg['WORK_DIR'], f'checkpoint_epoch_{epoch}.pth')
-                    torch.save(model.state_dict(), save_path)
-
-            logger.info('Finished Training')
-        
-        elif self.run_by == 'iteration': 
-
-            running_loss = 0.0
-            generator = iter(data_loaders['train'])
-
-            for i in range(cfg['ITERATION']): # loop over the dataset multiple times
-
-                
-                optimizer.zero_grad()
-                
-                try:
-                    data = next(generator)
-
-                except StopIteration: 
-
-                    generator = iter(data_loaders['train'])
-                    data = next(generator)
-                
-
-                inputs, labels = data['image'], data['segmap']
-                inputs, labels = inputs.to(device), labels.to(device)
-
-                outputs = model(inputs)
-
-                loss = criterion(outputs, labels)
-                loss.backward()
-                running_loss += loss.item()
-
-                optimizer.step()
-                scheduler.step()
-
-                if i % logger_interval == logger_interval-1:
-                    logger.info(f'[Iteration: {i + 1:5d}] Loss: {running_loss / logger_interval:.3f}')
-                    running_loss = 0.0
-
+                torch.distributed.barrier()
+            else: 
                 if i % eval_interval == eval_interval-1:
                     evaluate(model, data_loaders['val'], device, logger)  
 
@@ -114,21 +83,16 @@ class SupervisedLearner(object):
                     save_path = osp.join(cfg['WORK_DIR'], f'checkpoint_iter_{i+1}.pth')
                     torch.save(model.state_dict(), save_path)
 
-            logger.info('Finished Training')
-        else :
-            raise("The variable 'run_by' should be one of ['epoch', iteration']") 
+
+        logger.info('Finished Training')
 
 
 
     def eval(self,
-             cfg,
              model, 
              device, 
              logger, 
-             optimizer, 
-             criterion, 
-             data_loaders,
-             scheduler): 
+             data_loaders,): 
 
         evaluate(model, data_loaders['val'], device, logger)  
 
