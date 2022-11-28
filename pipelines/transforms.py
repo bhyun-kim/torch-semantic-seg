@@ -69,6 +69,58 @@ class Rescale(object):
         return {'image': img, 'segmap': segmap}
 
 
+class Dilate(object): 
+    """Dilate Label
+    """
+
+    def __init__(self, target_class, kernel_size, iteration=1):
+        """
+        Args:
+            target_class (int): Target class to dilate label 
+            kernel_size (int or tuple): kernel_size for dilation 
+            iteration (int): num of iteration to run dilation
+        """
+
+        assert isinstance(target_class, int)
+        assert isinstance(kernel_size, (int, tuple))
+        assert isinstance(iteration, int)
+
+        if isinstance(kernel_size, tuple):
+            assert len(kernel_size) == 2
+
+
+        self.target_class = target_class
+        self.kernel_size = kernel_size
+        self.iteration = iteration
+
+
+    def __call__(self, sample):
+        """
+        Args:
+            sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
+        
+        Returns:
+            sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
+        """
+
+        image, segmap = sample['image'], sample['segmap']
+
+        segmap_dilate = segmap == self.target_class 
+
+        
+        if isinstance(self.kernel_size, tuple):
+            kernel = np.ones(self.kernel_size, np.uint8)
+        elif isinstance(self.kernel_size, int):
+            kernel = np.ones((self.kernel_size, self.kernel_size), np.uint8)
+
+
+        segmap_dilate = cv2.dilate(segmap_dilate, kernel, iteration=self.iteration)
+
+        segmap[segmap_dilate] = self.target_class
+
+        return {'image': image, 'segmap': segmap}
+
+
 
 class RandomRescale(object): 
     """Rescale the image to a randomly selected output size within the given range.
@@ -217,13 +269,7 @@ class RandomCrop(object):
 
             if len(cnt) > 1 and np.max(cnt) / np.sum(cnt) < self.cat_max_ratio:
                 break
-            
-
-        # print(np.unique(segmap))
-        # print(np.max())
-        # print(segmap.shape[0]*segmap.shape[1])
         
-
         return {'image': crop_image, 'segmap': crop_segmap}
 
 
