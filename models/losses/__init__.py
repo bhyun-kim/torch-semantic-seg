@@ -1,4 +1,4 @@
 
 from registry import Registry
 
-RunnerRegistry = Registry()
+LossRegistry = Registry()

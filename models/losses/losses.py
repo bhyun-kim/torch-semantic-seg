@@ -1,8 +1,14 @@
+
+from . import LossRegistry
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
+
+@LossRegistry.register()
 class CrossEntropyLoss(nn.Module):
+    """
+    """
     def __init__(self,
                 weight=None,
                 reduction='mean',
@@ -18,10 +24,7 @@ class CrossEntropyLoss(nn.Module):
         self.ignore_idx = ignore_idx
         
     def forward(self, outputs, targets):
-        # print(outputs.shape)
-        # print(outputs[0, 5, 500:508, 800:808])
-        softmax = F.softmax(outputs, dim=1)
-        # print(softmax[0, :, 500, 800])
+        
         loss = self.loss(outputs, targets)
 
         if self.reduction == 'mean':

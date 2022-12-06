@@ -2,8 +2,9 @@ import cv2
 
 import os.path as osp 
 
+from . import DatasetRegistry
 from glob import glob 
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 """
 References: 
@@ -11,6 +12,7 @@ References:
 [1] https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
 """
 
+@DatasetRegistry.register('CityscapesDataset')
 class CityscapesDataset(Dataset):
     """Cityscapes dataset."""
 

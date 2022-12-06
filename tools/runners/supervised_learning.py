@@ -1,10 +1,11 @@
-import os.path as osp
-
 import torch 
 
+import os.path as osp
+
 from evaluate import evaluate
+from . import RunnerRegistry
 
-
+@RunnerRegistry.register('SupervisedLearner')
 class SupervisedLearner(object):
     def __init__(self, run_by='epoch'):
         

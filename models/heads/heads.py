@@ -1,6 +1,9 @@
+from . import HeadRegistry
+
 import torch.nn as nn 
 import torch.nn.functional as F 
 
+@HeadRegistry.register('Interpolate')
 class Interpolate(nn.Module):
     def __init__(self, 
                  size=None,

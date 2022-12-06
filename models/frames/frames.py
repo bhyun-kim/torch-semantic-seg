@@ -1,6 +1,9 @@
 import torch.nn as nn 
 
-class ModelWrapper(nn.Module):
+from . import FrameRegistry 
+
+@FrameRegistry.register('ModelFramer')
+class ModelFramer(nn.Module):
 
     def __init__(self,
                  encoder,
@@ -17,8 +20,9 @@ class ModelWrapper(nn.Module):
         
         feat = self.encoder(input)
 
-        if self.decoder : 
+        if self.decoder: 
             feat = self.decoder(feat)
-        if self.head :
-            feat = self.head(feat) 
+            
+        feat = self.head(feat) 
+        
         return feat

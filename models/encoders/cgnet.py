@@ -1,6 +1,8 @@
 import torch 
 import torch.nn as nn 
 
+from . import EncoderRegistry
+
 """
 References: 
     [1] https://github.com/wutianyiRosun/CGNet/blob/master/model/CGNet.py
@@ -268,6 +270,7 @@ class InputInjection(nn.Module):
         return input
 
 
+@EncoderRegistry.register('CGNet')
 class CGNet(nn.Module):
     def __init__(self, 
                  classes=19, 

@@ -1,25 +1,21 @@
-import sys 
 import os
-import os.path as osp
-
-sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-
-import argparse
-import logging 
-import json
+import sys 
 
 import torch 
-import torchvision as tv 
+import logging 
+import argparse
 
-from torchsummary import summary
-
-from importlib import import_module
-from tqdm import tqdm
-
-from utils import * 
-from builders.builders import *  
+import os.path as osp
 
 from datetime import datetime
+from torchsummary import summary
+from utils import cvt_moduleToDict
+from importlib import import_module
+
+from builders.builders import build_loaders, build_loss, build_model
+from builders.builders import build_optimizer, build_lr_config, build_runner
+
+
 
 def parse_args():
 

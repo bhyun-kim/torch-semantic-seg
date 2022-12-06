@@ -31,3 +31,4 @@ def cvt_moduleToDict(mod) :
         }
     
     return cfg
+

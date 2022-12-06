@@ -7,17 +7,12 @@ print(sys.path)
 import torch
 import torchvision as tv 
 
-from pipelines import *
-from datasets import *
-from models import *
-from models.encoders import *
-from models.decoders import * 
-from models.heads import *
-
-from torch.optim import *
-from torch.optim.lr_scheduler import *
-
 from runners.supervised_learning import *
+
+from datasets import DatasetRegistry
+from pipelines import PipelineRegistry
+from models import LossRegistry, OptimRegistry, SchedulerRegistry
+from models.frames.frames import ModelFramer
 
 
 def build_pipelines(cfg_pipelines):
@@ -33,11 +28,14 @@ def build_pipelines(cfg_pipelines):
 
     pipelines = [] 
 
-    for pipeline in cfg_pipelines: 
-        name = pipeline.pop('type')
-        pipelines.append(globals()[name](**pipeline))
+    for cfg in cfg_pipelines: 
+        name = cfg.pop('type')
+        pipeline = PipelineRegistry.lookup(name)
+        pipelines.append(pipeline(**cfg))
 
     return tv.transforms.Compose(pipelines)
+
+
 
 def build_dataset(cfg, transforms=None):
     """Build dataset from config 
@@ -68,7 +66,6 @@ def _concat_dataset(cfg, transforms=None):
 
     for dataset in cfg['datasets']:
         datasets.append(_build_dataset(dataset, transforms=transforms))
-        
 
     return torch.utils.data.ConcatDataset(datasets)
 
@@ -76,14 +73,15 @@ def _build_dataset(cfg, transforms=None):
     """Build dataset from config 
     Args: 
         cfg (dict): dataset configuration 
-        transforms (torchvision.transforms)
 
     Returns: 
         dataset (torch.utils.data.Dataset)
     """
     dataset_type = cfg.pop('type')
-    return globals()[dataset_type](**cfg, transform=transforms)
+    cfg['transform'] = transforms
+    return DatasetRegistry.lookup(dataset_type)(**cfg)
 
+# To be removed
 def build_data_loader(cfg, dataset):
     """Build data loader from config
     Args:
@@ -96,7 +94,7 @@ def build_data_loader(cfg, dataset):
     
     return torch.utils.data.DataLoader(dataset, **cfg)
 
-
+# To be removed
 def build_loss(cfg):
     """Build loss from config 
     Args:
@@ -106,8 +104,8 @@ def build_loss(cfg):
         loss (torch.nn.Module)
     """
     loss_type = cfg.pop('type')
-
-    return globals()[loss_type](**cfg)
+    
+    return LossRegistry.lookup(loss_type)(**cfg)
 
 def build_model(cfg):
     """Build model from config 
@@ -137,10 +135,9 @@ def build_model(cfg):
     else:
         head = None
 
-    return ModelWrapper(encoder=encoder, decoder=decoder, head=head)
+    return ModelFramer(encoder=encoder, decoder=decoder, head=head)
 
-
-
+# To be removed
 def build_optimizer(cfg, model):
     """Build optimizer from config 
     Args: 
@@ -153,7 +150,8 @@ def build_optimizer(cfg, model):
 
     optim_type = cfg.pop('type')
 
-    return globals()[optim_type](model.parameters(), **cfg)
+    return OptimRegistry.lookup(optim_type)(model.parameters(), **cfg)
+
 
 
 def build_loaders(cfg):
@@ -182,6 +180,7 @@ def build_loaders(cfg):
     return loaders 
 
 
+# To be removed
 def build_runner(cfg):
     """Build runner from config 
     Args: 
@@ -195,6 +194,7 @@ def build_runner(cfg):
 
     return globals()[runner_type](**cfg)
 
+# To be removed
 def build_lr_config(cfg, optim):
     """Build lr_config
     Args: 
@@ -207,4 +207,4 @@ def build_lr_config(cfg, optim):
 
     lr_scheduler_type = cfg.pop('type')
 
-    return globals()[lr_scheduler_type](optimizer=optim, **cfg)
+    return SchedulerRegistry.lookup(lr_scheduler_type)(optimizer=optim, **cfg)
