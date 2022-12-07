@@ -7,11 +7,14 @@ print(sys.path)
 import torch
 import torchvision as tv 
 
-from runners.supervised_learning import *
+from runners import RunnerRegistry
 
 from datasets import DatasetRegistry
 from pipelines import PipelineRegistry
 from models import LossRegistry, OptimRegistry, SchedulerRegistry
+from models.encoders import EncoderRegistry
+from models.decoders import DecoderRegistry
+from models.heads import HeadRegistry
 from models.frames.frames import ModelFramer
 
 
@@ -81,7 +84,7 @@ def _build_dataset(cfg, transforms=None):
     cfg['transform'] = transforms
     return DatasetRegistry.lookup(dataset_type)(**cfg)
 
-# To be removed
+
 def build_data_loader(cfg, dataset):
     """Build data loader from config
     Args:
@@ -94,7 +97,6 @@ def build_data_loader(cfg, dataset):
     
     return torch.utils.data.DataLoader(dataset, **cfg)
 
-# To be removed
 def build_loss(cfg):
     """Build loss from config 
     Args:
@@ -117,27 +119,35 @@ def build_model(cfg):
     """
     
     encoder_name = cfg['encoder'].pop('type')
-    # if cfg['encoder']:
-    encoder = globals()[encoder_name](**cfg['encoder'])
-    # else: 
-        # encoder = globals()[encoder_name]()
+    encoder = EncoderRegistry.lookup(encoder_name)(**cfg['encoder'])
+
+    head = build_head(cfg['head'])
 
     if cfg['decoder']:
         decoder_name = cfg['decoder'].pop('type')
-        decoder = globals()[decoder_name]( **cfg['decoder'])
+        decoder = DecoderRegistry.lookup(decoder_name)( **cfg['decoder'])
     else: 
         decoder = None 
 
-    if cfg['head']:
-
-        head_type = cfg['head'].pop('type')
-        head = globals()[head_type](**cfg['head'])
-    else:
-        head = None
-
     return ModelFramer(encoder=encoder, decoder=decoder, head=head)
 
-# To be removed
+
+def build_head(cfg):
+    """Build head from config
+    Args: 
+        cfg (dict): optimizer configuration
+
+    Returns: 
+        torch.nn.Module
+    """
+
+    loss = build_loss(cfg['loss'])
+    head_name = cfg.pop('type')
+    cfg['criterion'] = loss
+    return HeadRegistry.lookup(head_name)(**cfg)
+
+
+
 def build_optimizer(cfg, model):
     """Build optimizer from config 
     Args: 
@@ -180,7 +190,6 @@ def build_loaders(cfg):
     return loaders 
 
 
-# To be removed
 def build_runner(cfg):
     """Build runner from config 
     Args: 
@@ -192,9 +201,9 @@ def build_runner(cfg):
 
     runner_type = cfg.pop('type')
 
-    return globals()[runner_type](**cfg)
+    return RunnerRegistry.lookup(runner_type)(**cfg)
 
-# To be removed
+
 def build_lr_config(cfg, optim):
     """Build lr_config
     Args: 

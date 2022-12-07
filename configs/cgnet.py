@@ -1,9 +1,5 @@
 ROOT_DIR = '/home/user/UOS-SSaS Dropbox/05. Data/00. Benchmarks/01. cityscapes'
-MODEL = dict(
-    encoder = dict(type='CGNet'),
-    decoder = None,
-    head = dict(type='Interpolate', scale_factor=8, mode='bilinear')
-)
+
 LOSS = dict(
     type='CrossEntropyLoss',
     weight=[
@@ -13,6 +9,17 @@ LOSS = dict(
             10.396974, 10.055647
             ]  
 ) 
+
+MODEL = dict(
+    encoder = dict(type='CGNet'),
+    decoder = None,
+    head = dict(
+        type='Interpolate', 
+        loss=LOSS,
+        scale_factor=8,
+        mode='bilinear'
+    )
+)
 
 CROP_SIZE = (512, 1024)
 BATCH_SIZE = 16

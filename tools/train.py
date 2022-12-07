@@ -9,12 +9,12 @@ import os.path as osp
 
 from datetime import datetime
 from torchsummary import summary
-from utils import cvt_moduleToDict
 from importlib import import_module
+from utils import cvt_cfgPathToDict, build_logger
 
 from builders.builders import build_loaders, build_loss, build_model
 from builders.builders import build_optimizer, build_lr_config, build_runner
-
+from pprint import pprint, pformat
 
 
 def parse_args():
@@ -28,48 +28,28 @@ def parse_args():
 
 
 def main():
-    from pprint import pprint, pformat
+    
     args = parse_args()
 
     # build config 
-    _cfg = args.config
+    cfg_path = args.config
 
-    abs_path = osp.abspath(_cfg)
+    cfg = cvt_cfgPathToDict(cfg_path)
 
-    sys.path.append(osp.split(abs_path)[0])
-    _mod = import_module(osp.split(abs_path)[1].replace('.py', ''))
-
-    cfg = cvt_moduleToDict(_mod)
-
-    # build logger  
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(message)s')
-    os.makedirs(cfg['WORK_DIR'], exist_ok=True)
     
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    log_file = cfg['WORK_DIR'] + f'/{current_time}.log'
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    # build logger  
+    logger, log_path = build_logger(cfg['WORK_DIR'])
+    
 
     # Print paths
-    logger.info('Log file is %s' % log_file)
-    
-    logger.info(pformat(pprint(cfg, width=100)))
+    logger.info('Log file is saved at %s' % log_path)
+    logger.info(pformat(cfg, width=100))
 
     # select device 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     ### build data loaders 
     data_loaders = build_loaders(cfg['DATA_LOADERS']) 
-    # print(len(data_loaders))
-
-    # build loss 
-    criterion = build_loss(cfg['LOSS'])
-    criterion.to(device)
 
     # build model     
     model = build_model(cfg['MODEL'])    
@@ -88,7 +68,6 @@ def main():
         device, 
         logger, 
         optimizer, 
-        criterion, 
         data_loaders,
         scheduler
     )

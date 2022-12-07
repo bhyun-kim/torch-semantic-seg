@@ -17,14 +17,13 @@ class SupervisedLearner(object):
              device, 
              logger, 
              optimizer, 
-             criterion, 
              data_loaders,
              scheduler):
 
         """
         Args: 
             runner_pack (dict): 
-                includes configuration, model, criterion, data_loaders, 
+                includes configuration, model, data_loaders, 
                          device, logger
         """
 
@@ -48,8 +47,7 @@ class SupervisedLearner(object):
                     optimizer.zero_grad()
 
                     # forward + backward + optimize
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
+                    loss = model(inputs)
                     
                     loss.backward()
                     optimizer.step()
@@ -95,9 +93,8 @@ class SupervisedLearner(object):
                 inputs, labels = data['image'], data['segmap']
                 inputs, labels = inputs.to(device), labels.to(device)
 
-                outputs = model(inputs)
+                loss = model(inputs)
 
-                loss = criterion(outputs, labels)
                 loss.backward()
                 running_loss += loss.item()
 

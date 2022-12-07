@@ -6,6 +6,7 @@ import torch.nn.functional as F
 @HeadRegistry.register('Interpolate')
 class Interpolate(nn.Module):
     def __init__(self, 
+                 criterion,
                  size=None,
                  scale_factor=None, 
                  mode='nearest', 
@@ -15,6 +16,12 @@ class Interpolate(nn.Module):
     ):
         """
         Args:
+            size 
+            scale_factor 
+            mode (str) 
+            align_corners (bool) 
+            recompute_scale_factor () 
+            antialias (bool) 
             
         """
         super().__init__()
@@ -27,7 +34,11 @@ class Interpolate(nn.Module):
             recompute_scale_factor=recompute_scale_factor,
             antialias=antialias
         )
+        self.criterion = criterion
 
-    def forward(self, input):
-        output = F.interpolate(input=input, **self.args)
-        return output
+    def forward(self, input, labels):
+        output = self.predict(input)
+        return self.criterion(output, labels)
+
+    def predict(self, input):
+        return F.interpolate(input=input, **self.args)
