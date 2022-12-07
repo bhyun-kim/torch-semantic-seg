@@ -3,6 +3,7 @@ import torch.nn.functional as F
 
 class Interpolate(nn.Module):
     def __init__(self, 
+                 loss,
                  size=None,
                  scale_factor=None, 
                  mode='nearest', 
@@ -16,7 +17,7 @@ class Interpolate(nn.Module):
         """
         super().__init__()
 
-        self.args = dict(
+        self.args_interpolate = dict(
             size=size,
             scale_factor=scale_factor,
             mode=mode,
@@ -25,6 +26,14 @@ class Interpolate(nn.Module):
             antialias=antialias
         )
 
-    def forward(self, input):
-        output = F.interpolate(input=input, **self.args)
-        return output
+        self.criterion = loss
+
+    def forward(self, input, labels=None):
+        output = F.interpolate(input=input, **self.args_interpolate)
+
+        if labels == None: 
+            return output 
+        else: 
+            return self.criterion(output, labels)
+            
+        

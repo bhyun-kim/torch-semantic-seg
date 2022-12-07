@@ -145,7 +145,6 @@ class RandomRescale(object):
             sample (dict, {image: np.arr (H x W x C, uint8), segmap: np.arr (H x W, uint8)})
         """
         output_size = random.randint(self.output_range[0], self.output_range[1])
-        print(output_size)
         rescale = Rescale(output_size)
         return rescale(sample)
 
