@@ -22,7 +22,7 @@ MODEL = dict(
 )
 
 CROP_SIZE = (512, 1024)
-BATCH_SIZE = 16
+BATCH_SIZE = 8
 MEAN = [72.39239876, 82.90891754, 73.15835921]
 
 STD = [1, 1, 1]
@@ -56,7 +56,7 @@ DATA_LOADERS = dict(
         pipelines=TRAIN_PIPELINES,
         loader=dict(
             shuffle=True,
-            batch_size=BATCH_SIZE
+            batch_size=BATCH_SIZE,
         )
     ),
     val = dict(
@@ -67,7 +67,7 @@ DATA_LOADERS = dict(
         pipelines=VAL_PIPELINES,
         loader=dict(
             shuffle=False,
-            batch_size=1
+            batch_size=1,
         )
     ),
     test=dict(
@@ -78,7 +78,7 @@ DATA_LOADERS = dict(
         pipelines=TEST_PIPELINES,
         loader=dict(
             shuffle=False,
-            batch_size=1
+            batch_size=1,
         )
     )
 )
@@ -98,5 +98,5 @@ RUNNER = dict(
 EVALUATION = dict(interval=4000, metric='mIoU')
 CHECKPOINT = dict(interval=4000 )
 LOGGER = dict(interval=50)
-DEVICES = ['cuda:0']
-WORK_DIR = '/home/user/UOS-SSaS Dropbox/05. Data/03. Checkpoints/00. Benchmarks/01. cityscapes/cgnet/11.02.2022'
+GPUS = 4
+WORK_DIR = '/home/sss/#temp/#cgent_test'

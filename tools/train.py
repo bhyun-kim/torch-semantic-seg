@@ -5,61 +5,93 @@ import torch
 import logging 
 import argparse
 
+import torch.nn as nn
 import os.path as osp
 
 from datetime import datetime
 from torchsummary import summary
 from importlib import import_module
-from utils import cvt_cfgPathToDict, build_logger
+from utils import cvt_cfgPathToDict, Logger
 
 from builders.builders import build_loaders, build_loss, build_model
 from builders.builders import build_optimizer, build_lr_config, build_runner
-from pprint import pprint, pformat
+
+from pprint import pformat
+
+
+def setup(rank, world_size):
+    """Setup training processors 
+    Args: 
+        rank (int): Processor indentifier
+        world_size (int): Number of total processors in the process group 
+    """
+    os.environ['MASTER_ADDR'] = 'localhost' # TODO check what it means...
+    os.environ['MASTER_PORT'] = '12355'     # TODO check what it means...
+
+    torch.distributed.init_process_group("nccl", rank=rank, world_size=world_size)
 
 
 def parse_args():
 
     parser = argparse.ArgumentParser(description='Train a segmentor')
     parser.add_argument('config', help='train config file path')
+    parser.add_argument('--num_gpus', type=int, default=1, help='Number of GPUs for training')
 
     args = parser.parse_args()
 
     return args
 
 
-def main():
-    
+def train(rank):
+    """Single GPU training 
+    Args: 
+        rank (int): Processor indentifier 
+    """
+
     args = parse_args()
 
     # build config 
     cfg_path = args.config
+    num_gpus = args.num_gpus
+
+    if num_gpus > 1: 
+        setup(rank, num_gpus)
+        is_dist = True
+    else: 
+        is_dist = None
 
     cfg = cvt_cfgPathToDict(cfg_path)
 
-    
-    # build logger  
-    logger, log_path = build_logger(cfg['WORK_DIR'])
-    
+    if rank == 0: 
+        verbose = 1
+    else: 
+        verbose = -1
 
-    # Print paths
-    logger.info('Log file is saved at %s' % log_path)
-    logger.info(pformat(cfg, width=100))
+    logger = Logger(cfg['WORK_DIR'], verbose)
 
-    # select device 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # Print paths 
+    pformat_cfg = pformat(cfg, width=75)
+    logger.info(pformat_cfg)
 
-    ### build data loaders 
-    data_loaders = build_loaders(cfg['DATA_LOADERS']) 
+    # build data loaders 
+    data_loaders = build_loaders(cfg['DATA_LOADERS'], rank, num_replicas=num_gpus) 
 
     # build model     
     model = build_model(cfg['MODEL'])    
-    logger.info(summary(model))
+    device = torch.device(f"cuda:{rank}" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
+    if rank == 0: 
+        logger.info(str(summary(model, input_size=(cfg['BATCH_SIZE'], 3, cfg['CROP_SIZE'][0], cfg['CROP_SIZE'][1]))))
+
+    if is_dist: 
+        model = nn.SyncBatchNorm.convert_sync_batchnorm(model) 
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[rank], output_device=rank)
+
+    
     # build optimizer 
     optimizer = build_optimizer(cfg['OPTIMIZER'], model)
-    if  cfg['LR_CONFIG']:
-        scheduler = build_lr_config(cfg['LR_CONFIG'], optimizer)
+    scheduler = build_lr_config(cfg['LR_CONFIG'], optimizer)
 
     runner = build_runner(cfg['RUNNER'])
     runner.train(
@@ -69,10 +101,31 @@ def main():
         logger, 
         optimizer, 
         data_loaders,
-        scheduler
+        scheduler,
+        is_dist=is_dist
     )
 
+
+def dist_train(num_gpus):
+    """Spawn Multi-GPU training
+    """
+
+    torch.multiprocessing.spawn(
+        train,
+        nprocs=num_gpus
+    )
     
+
+def main():
+    
+    args = parse_args()
+
+    # select train mode
+    if args.num_gpus > 1: 
+        dist_train(args.num_gpus)
+    else : 
+        train(rank=0)
+
         
 if __name__ == '__main__':
     main()

@@ -16,7 +16,7 @@ class ModelFramer(nn.Module):
         self.decoder = decoder 
         self.head = head 
 
-    def forward(self, input):
+    def forward(self, input, labels=None):
         
         feat = self.encoder(input)
 

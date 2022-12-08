@@ -9,6 +9,11 @@ import logging
 import os.path as osp
 
 
+import logging
+import os
+from datetime import datetime
+
+
 def cvt_pathToModule(file_path):
     """Convert path (string) to module form.
 
@@ -60,32 +65,45 @@ def cvt_cfgPathToDict(path):
     return cvt_moduleToDict(_mod)
 
 
+class Logger(object):
+    def __init__(self, directory, verbose=1):
+        """
+        Args:
+            directory (str): path to write logging file 
+            verbose (int): 
+                if verbose == 1: logger print and write on logging files
+                if verbose == -1: skips both print and write  
+        """
 
-def build_logger(work_dir):
-    """Build Logger 
+        # build logger  
+        self.verbose = verbose
 
-    Args: 
-        work_dir (str)
+        if self.verbose != -1:
 
-    Returns: 
-        logger (logging.logger)
-        log_path (str)
+            logging.basicConfig(level=logging.INFO)
+            self.logger = logging.getLogger()
+            self.logger.setLevel(logging.INFO)
+            formatter = logging.Formatter('%(asctime)s - %(message)s')
+            os.makedirs(directory, exist_ok=True)
+            
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            log_file = directory + f'/{current_time}.log'
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setLevel(logging.INFO)
+            file_handler.setFormatter(formatter)
+            self.logger.addHandler(file_handler)
+            self.logger.info('Log file is %s' % log_file)
 
-    """
-    # build logger  
+    def info(self, input):
+        """
+        Args: 
+            input (str)
+        """
+        print(input)
+        if self.verbose == 1:
+            self.logger.info(input)
 
-    os.makedirs(work_dir, exist_ok=True)
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        elif self.verbose == -1:
+            pass
 
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(message)s')
-    
-    log_path = work_dir + f'/{current_time}.log'
-    file_handler = logging.FileHandler(log_path)
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
-    return logger, log_path
+        return None
