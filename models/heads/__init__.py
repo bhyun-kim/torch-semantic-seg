@@ -1,4 +1,6 @@
 
 from registry import Registry
 
-RunnerRegistry = Registry()
+
+HeadRegistry = Registry()
+

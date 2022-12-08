@@ -1,22 +1,20 @@
-import sys 
 import os
-import os.path as osp
-
-sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-
-import argparse
+import sys 
 
 import torch 
+import logging 
+import argparse
 
-from torchinfo import summary
+import torch.nn as nn
+import os.path as osp
 
+from datetime import datetime
+from torchsummary import summary
 from importlib import import_module
+from utils import cvt_cfgPathToDict, Logger
 
-from utils import cvt_moduleToDict, Logger
-from builders.build_loaders import *  
-from builders.build_models import *  
-from builders.build_optims import *
-from builders.build_runners import * 
+from builders.builders import build_loaders, build_loss, build_model
+from builders.builders import build_optimizer, build_lr_config, build_runner
 
 from pprint import pformat
 
@@ -53,7 +51,7 @@ def train(rank):
     args = parse_args()
 
     # build config 
-    _cfg = args.config
+    cfg_path = args.config
     num_gpus = args.num_gpus
 
     if num_gpus > 1: 
@@ -62,12 +60,7 @@ def train(rank):
     else: 
         is_dist = None
 
-    abs_path = osp.abspath(_cfg)
-
-    sys.path.append(osp.split(abs_path)[0])
-    _mod = import_module(osp.split(abs_path)[1].replace('.py', ''))
-
-    cfg = cvt_moduleToDict(_mod)
+    cfg = cvt_cfgPathToDict(cfg_path)
 
     if rank == 0: 
         verbose = 1

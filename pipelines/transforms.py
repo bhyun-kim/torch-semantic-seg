@@ -9,12 +9,16 @@
 # [v] to tensor 
 # [v] normalization 
 
+
+
 import random
 
 import cv2 
 import torch
 
 import numpy as np 
+
+from . import PipelineRegistry
 
 """
 References: 
@@ -23,7 +27,7 @@ References:
 [2] https://mmcv-jm.readthedocs.io/en/stable/_modules/mmcv/image/normalize.html
 """
 
-
+@PipelineRegistry.register('Rescale')
 class Rescale(object): 
     """Rescale the image in a sample to a given size.
     """
@@ -69,6 +73,7 @@ class Rescale(object):
         return {'image': img, 'segmap': segmap}
 
 
+@PipelineRegistry.register('Dilate')
 class Dilate(object): 
     """Dilate Label
     """
@@ -121,7 +126,7 @@ class Dilate(object):
         return {'image': image, 'segmap': segmap}
 
 
-
+@PipelineRegistry.register('RandomRescale')
 class RandomRescale(object): 
     """Rescale the image to a randomly selected output size within the given range.
     """
@@ -149,6 +154,7 @@ class RandomRescale(object):
         return rescale(sample)
 
 
+@PipelineRegistry.register('Pad')
 class Pad(object):
     """Pad image.
     """
@@ -200,6 +206,7 @@ class Pad(object):
         return {'image': image, 'segmap': segmap}
 
 
+@PipelineRegistry.register('RandomCrop')
 class RandomCrop(object):
     """Crop randomly the image in a sample.
     """
@@ -272,7 +279,7 @@ class RandomCrop(object):
         return {'image': crop_image, 'segmap': crop_segmap}
 
 
-
+@PipelineRegistry.register('RandomFlipLR')
 class RandomFlipLR(object):
     """
     Horizontally flip the image and segmap.
@@ -305,7 +312,7 @@ class RandomFlipLR(object):
         return {'image': image, 'segmap': segmap}
 
 
-
+@PipelineRegistry.register('RandomFlipUD')
 class RandomFlipUD(object):
     """
     Vertically flip the image and segmap.
@@ -337,7 +344,7 @@ class RandomFlipUD(object):
 
         return {'image': image, 'segmap': segmap}
 
-
+@PipelineRegistry.register('Normalization')
 class Normalization(object):
     """Normalize image 
     """
@@ -373,7 +380,7 @@ class Normalization(object):
 
         return {'image': image, 'segmap': segmap}
 
-
+@PipelineRegistry.register('ToTensor')
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 

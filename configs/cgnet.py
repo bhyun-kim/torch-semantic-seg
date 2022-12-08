@@ -1,4 +1,5 @@
-ROOT_DIR = '/home/sss/#data/01-1. cityscapes_mini'
+ROOT_DIR = '/home/user/UOS-SSaS Dropbox/05. Data/00. Benchmarks/01. cityscapes'
+
 LOSS = dict(
     type='CrossEntropyLoss',
     weight=[
@@ -12,7 +13,12 @@ LOSS = dict(
 MODEL = dict(
     encoder = dict(type='CGNet'),
     decoder = None,
-    head = dict(type='Interpolate', scale_factor=8, mode='bilinear', loss=LOSS)
+    head = dict(
+        type='Interpolate', 
+        loss=LOSS,
+        scale_factor=8,
+        mode='bilinear'
+    )
 )
 
 CROP_SIZE = (512, 1024)

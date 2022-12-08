@@ -1,8 +1,9 @@
 import warnings
 
 from torch.optim.lr_scheduler import _LRScheduler
+from . import SchedulerRegistry
 
-
+@SchedulerRegistry.register('PolynomialLR')
 class PolynomialLR(_LRScheduler):
     """Decays the learning rate of each parameter group using a polynomial function
     in the given total_iters. When last_epoch=-1, sets initial lr as lr.

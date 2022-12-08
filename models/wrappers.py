@@ -1,8 +1,9 @@
 import cv2 
 import numpy as np 
 
+from . import WrapperRegistry
 
-
+@WrapperRegistry('Erode')
 class Erode(object): 
     """Erode Label
     """

@@ -1,3 +1,13 @@
+from importlib import import_module
+from datetime import datetime
+
+import os 
+import sys 
+import logging
+
+
+import os.path as osp
+
 
 import logging
 import os
@@ -6,7 +16,7 @@ from datetime import datetime
 
 def cvt_pathToModule(file_path):
     """Convert path (string) to module form.
-    
+
     Args :
         file_path (str) : file path written in nomal path form
     
@@ -36,6 +46,24 @@ def cvt_moduleToDict(mod) :
         }
     
     return cfg
+
+
+def cvt_cfgPathToDict(path):
+    """Convert configuration path to dictionary to
+    Args: 
+        path (str)
+
+    Returns: 
+        cfg (dict)
+    """
+
+    abs_path = osp.abspath(path)
+
+    sys.path.append(osp.split(abs_path)[0])
+    _mod = import_module(osp.split(abs_path)[1].replace('.py', ''))
+
+    return cvt_moduleToDict(_mod)
+
 
 class Logger(object):
     def __init__(self, directory, verbose=1):
@@ -79,4 +107,3 @@ class Logger(object):
             pass
 
         return None
-
