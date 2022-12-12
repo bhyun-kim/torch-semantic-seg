@@ -9,7 +9,7 @@ import sys
 from importlib import import_module
 
 from utils import * 
-from builders.builders import * 
+from builders import build_model, build_pipelines 
 from tqdm import tqdm
 from glob import glob 
 
@@ -23,6 +23,7 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description='Train a segmentor')
     parser.add_argument('config', help='train config file path')
+    parser.add_argument('checkpoint', help='checkpoint file path')
     parser.add_argument('infer_dir', help='the dir to inference images')
     parser.add_argument('--input_ext', help='file extension of input images, default = .jpg',
                         type=str, default='.png')
@@ -34,31 +35,33 @@ def parse_args():
     return args
 
 
-
 def main():
     args = parse_args()
 
     # parse args
-    _cfg = args.config
+    cfg_path = args.config
     infer_dir = args.infer_dir
+    checkpoint = args.checkpoint
     input_ext = args.input_ext
     output_ext = args.output_ext
 
-
-    abs_path = osp.abspath(_cfg)
-
-    sys.path.append(osp.split(abs_path)[0])
-    _mod = import_module(osp.split(abs_path)[1].replace('.py', ''))
-
-    cfg = cvt_moduleToDict(_mod)
+    checkpoint = osp.abspath(checkpoint)
+    cfg = cvt_cfgPathToDict(cfg_path)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # init_model 
-    model = build_model(cfg['MODEL'])
-    model.load_state_dict(torch.load('/home/user/UOS-SSaS Dropbox/05. Data/03. Checkpoints/00. Benchmarks/01. cityscapes/cgnet/11.02.2022/checkpoint_iter_56000.pth'))
-    model.to(device)
     
+    model = build_model(cfg['MODEL'])
+
+    
+    pretrained_dict = torch.load(checkpoint)
+    
+    # When model trained with nn.DataParallel, the model is wrapped with 'module'.
+    # Remove 'module' from dict for normal inference mode. 
+    # See https://discuss.pytorch.org/t/missing-keys-unexpected-keys-in-state-dict-when-loading-self-trained-model/22379/10
+    pretrained_dict = {key.replace("module.", ""): value for key, value in pretrained_dict.items()}
+    model.load_state_dict(pretrained_dict)
+    model.to(device)
 
     transforms = build_pipelines(cfg['TEST_PIPELINES'])
 
@@ -76,8 +79,6 @@ def main():
         output = model(img)
         output = torch.argmax(output, dim=1)
         output = torch.squeeze(output)
-        # transpose 
-        # output = torch.transpose(output, (1, 2, 0))
 
         output = output.detach().cpu().numpy()
         
@@ -88,14 +89,9 @@ def main():
         for idx, color in enumerate(cfg['PALETTE']):
             _img[output == idx] = _img[output == idx] * 0.5 + np.array(color)*0.5
         save_path = img_path.replace(input_ext, f'_result{output_ext}')
-        # 
         
         _img = cv2.cvtColor(_img, cv2.COLOR_RGB2BGR)
         cv2.imwrite(save_path, _img)
-
-
-
-
 
 
 
