@@ -1,8 +1,8 @@
 # torch 
 # torchvision 
 opencv-python 
-jupyter notebook
 prettytable
+jupyter 
 tqdm
 torchsummary
 
