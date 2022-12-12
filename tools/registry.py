@@ -20,7 +20,7 @@ class Registry(object):
         """
 
         def _register(item):
-            if key in self._registry:
+            if key in self.registry:
                 raise ValueError(f"{key} is already registered!")
 
             self.registry[key] = item

@@ -123,4 +123,5 @@ def calculate_miou(cm, logger=None, classes=None):
         print('\n'+iou_table.get_string())
         print('\n'+miou_table.get_string())
         
+    return None
 

@@ -1,6 +1,6 @@
+from .heads import Interpolate
 
-from registry import Registry
 
-
-HeadRegistry = Registry()
-
+__all__ = [
+    'Interpolate'
+]

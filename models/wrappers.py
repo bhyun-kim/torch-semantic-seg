@@ -1,9 +1,9 @@
 import cv2 
 import numpy as np 
 
-from . import WrapperRegistry
+from library import WrapperRegistry
 
-@WrapperRegistry('Erode')
+@WrapperRegistry.register('Erode')
 class Erode(object): 
     """Erode Label
     """

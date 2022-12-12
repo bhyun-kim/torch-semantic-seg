@@ -10,7 +10,6 @@
 # [v] normalization 
 
 
-
 import random
 
 import cv2 
@@ -18,7 +17,7 @@ import torch
 
 import numpy as np 
 
-from . import PipelineRegistry
+from library import PipelineRegistry
 
 """
 References: 

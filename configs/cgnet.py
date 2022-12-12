@@ -1,4 +1,4 @@
-ROOT_DIR = '/home/user/UOS-SSaS Dropbox/05. Data/00. Benchmarks/01. cityscapes'
+ROOT_DIR = '/home/sss/UOS-SSaS Dropbox/05. Data/00. Benchmarks/01. cityscapes'
 
 LOSS = dict(
     type='CrossEntropyLoss',
@@ -55,7 +55,7 @@ DATA_LOADERS = dict(
             split='train'), 
         pipelines=TRAIN_PIPELINES,
         loader=dict(
-            shuffle=True,
+            shuffle=False,
             batch_size=BATCH_SIZE,
         )
     ),

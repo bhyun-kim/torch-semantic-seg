@@ -1,11 +1,13 @@
 
-from . import LossRegistry
+
 
 import torch
 import torch.nn as nn
 
+from library import LossRegistry
 
-@LossRegistry.register()
+
+@LossRegistry.register('CrossEntropyLoss')
 class CrossEntropyLoss(nn.Module):
     """
     """

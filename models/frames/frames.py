@@ -1,6 +1,6 @@
 import torch.nn as nn 
 
-from . import FrameRegistry 
+from library import FrameRegistry 
 
 @FrameRegistry.register('ModelFramer')
 class ModelFramer(nn.Module):
@@ -22,7 +22,11 @@ class ModelFramer(nn.Module):
 
         if self.decoder: 
             feat = self.decoder(feat)
+
+        if labels != None:
             
-        feat = self.head(feat) 
+            feat = self.head(feat, labels) 
+        else: 
+            feat = self.head.predict(feat) 
         
         return feat

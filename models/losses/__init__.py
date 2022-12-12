@@ -1,4 +1,5 @@
+from .losses import CrossEntropyLoss
 
-from registry import Registry
-
-LossRegistry = Registry()
+__all__ = [
+    'CrossEntropyLoss'
+]

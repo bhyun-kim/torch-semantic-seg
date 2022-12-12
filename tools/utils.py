@@ -99,7 +99,6 @@ class Logger(object):
         Args: 
             input (str)
         """
-        print(input)
         if self.verbose == 1:
             self.logger.info(input)
 

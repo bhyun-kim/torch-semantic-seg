@@ -1,20 +1,18 @@
-import sys 
-import os.path as osp
-
-sys.path.append(osp.dirname(osp.dirname(osp.dirname(osp.abspath(__file__)))))
-print(sys.path)
 
 import torch
 import torchvision as tv 
 
-from runners import RunnerRegistry
+import pipelines 
+import datasets
+from models import encoders, losses, heads, optims, lr_schedulers, wrappers
+import runners
 
-from datasets import DatasetRegistry
-from pipelines import PipelineRegistry
-from models import LossRegistry, OptimRegistry, SchedulerRegistry
-from models.encoders import EncoderRegistry
-from models.decoders import DecoderRegistry
-from models.heads import HeadRegistry
+
+
+from library import DatasetRegistry, PipelineRegistry, LossRegistry
+from library import EncoderRegistry, DecoderRegistry, HeadRegistry
+from library import OptimRegistry, SchedulerRegistry, RunnerRegistry
+
 from models.frames.frames import ModelFramer
 
 
@@ -81,11 +79,11 @@ def _build_dataset(cfg, transforms=None):
         dataset (torch.utils.data.Dataset)
     """
     dataset_type = cfg.pop('type')
-    cfg['transform'] = transforms
+    cfg['transforms'] = transforms
     return DatasetRegistry.lookup(dataset_type)(**cfg)
 
 
-def build_data_loader(cfg, dataset):
+def build_data_loader(cfg, dataset, sampler):
     """Build data loader from config
     Args:
         cfg (dict): data loader configuration 
@@ -95,7 +93,7 @@ def build_data_loader(cfg, dataset):
         data_loader (torch.utils.data.DataLoader)
     """
     
-    return torch.utils.data.DataLoader(dataset, **cfg)
+    return torch.utils.data.DataLoader(dataset, **cfg, sampler=sampler)
 
 def build_loss(cfg):
     """Build loss from config 
@@ -143,7 +141,7 @@ def build_head(cfg):
 
     loss = build_loss(cfg['loss'])
     head_name = cfg.pop('type')
-    cfg['criterion'] = loss
+    cfg['loss'] = loss
     return HeadRegistry.lookup(head_name)(**cfg)
 
 
@@ -164,7 +162,7 @@ def build_optimizer(cfg, model):
 
 
 
-def build_loaders(cfg):
+def build_loaders(cfg, rank, num_replicas=0):
     """Build data loaders from config 
     Args: 
         cfg (dict): data loaders configuration
@@ -183,9 +181,17 @@ def build_loaders(cfg):
 
         # build dataset 
         dataset = build_dataset(_cfg['dataset'], transforms=transforms)
+
+        if num_replicas > 0 : 
+            sampler = torch.utils.data.distributed.DistributedSampler(
+                dataset, num_replicas=num_replicas, rank=rank
+                )
+
+        else: 
+            sampler = None 
         
         # build data loader 
-        loaders[split] = build_data_loader(_cfg['loader'], dataset) 
+        loaders[split] = build_data_loader(_cfg['loader'], dataset, sampler) 
 
     return loaders 
 

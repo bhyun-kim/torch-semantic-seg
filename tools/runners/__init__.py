@@ -1,4 +1,6 @@
+from .supervised_learning import SupervisedLearner
 
-from registry import Registry
 
-RunnerRegistry = Registry()
+__all__ = [
+    'SupervisedLearner'
+]

@@ -3,7 +3,7 @@ import torch
 import os.path as osp
 
 from evaluate import evaluate
-from . import RunnerRegistry
+from library import RunnerRegistry
 
 @RunnerRegistry.register('SupervisedLearner')
 class SupervisedLearner(object):
@@ -48,7 +48,7 @@ class SupervisedLearner(object):
                     optimizer.zero_grad()
 
                     # forward + backward + optimize
-                    loss = model(inputs)
+                    loss = model(inputs, labels)
                     
                     loss.backward()
                     optimizer.step()
@@ -64,7 +64,7 @@ class SupervisedLearner(object):
                         running_loss = 0.0
 
                 if i % eval_interval == eval_interval-1:
-                    evaluate(model, data_loaders['val'], device, logger)  
+                    evaluate(model, data_loaders['val'], device,  logger=logger)  
 
                 if i % checkpoint_interval == checkpoint_interval-1:
                     save_path = osp.join(cfg['WORK_DIR'], f'checkpoint_epoch_{epoch}.pth')
@@ -100,23 +100,19 @@ class SupervisedLearner(object):
                 logger.info(f'[Iteration: {i + 1:5d}] Loss: {running_loss / logger_interval:.3f}')
                 running_loss = 0.0
 
-                loss = model(inputs)
-
-                loss.backward()
-                running_loss += loss.item()
             if is_dist: 
                 rank = model.device_ids[0]
 
                 if rank == 0: 
 
                     if i % eval_interval == eval_interval-1:
-                        evaluate(model, data_loaders['val'], device, logger)  
+                        evaluate(model, data_loaders['val'], device, logger = logger)  
 
                     if i % checkpoint_interval == checkpoint_interval-1:
                         save_path = osp.join(cfg['WORK_DIR'], f'checkpoint_iter_{i+1}.pth')
                         torch.save(model.state_dict(), save_path)
 
-                torch.distributed.barrier()
+                # torch.distributed.barrier()
             else: 
                 if i % eval_interval == eval_interval-1:
                     evaluate(model, data_loaders['val'], device, logger)  

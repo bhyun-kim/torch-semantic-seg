@@ -2,9 +2,9 @@ import cv2
 
 import os.path as osp 
 
-from .__init__ import DatasetRegistry
 from glob import glob 
 from torch.utils.data import Dataset
+from library import DatasetRegistry
 
 """
 References: 

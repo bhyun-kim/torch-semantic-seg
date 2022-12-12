@@ -1,7 +1,7 @@
 import warnings
 
 from torch.optim.lr_scheduler import _LRScheduler
-from . import SchedulerRegistry
+from library import SchedulerRegistry
 
 @SchedulerRegistry.register('PolynomialLR')
 class PolynomialLR(_LRScheduler):

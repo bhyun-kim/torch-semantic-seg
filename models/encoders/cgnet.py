@@ -1,7 +1,7 @@
 import torch 
 import torch.nn as nn 
 
-from . import EncoderRegistry
+from library import EncoderRegistry
 
 """
 References: 
