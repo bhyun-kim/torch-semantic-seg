@@ -65,7 +65,6 @@ def calculate_cm(preds, gts, num_classes, ignore_idx):
         cm (np.array): confusion matrix of which shape is (num_classes x num_classes)
 
     """
-    
     category_vectors = []
     for pred, gt in zip(preds, gts):
         

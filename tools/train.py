@@ -78,6 +78,24 @@ def train(rank):
 
     # build model     
     model = build_model(cfg['MODEL'])    
+    
+    if cfg['LOAD_FROM'] :
+        pretrained_dict = torch.load(cfg['LOAD_FROM'])
+        pretrained_dict = {key.replace("module.", ""): value for key, value in pretrained_dict.items()}
+
+        for k in model.state_dict():
+            if k in pretrained_dict: 
+                if model.state_dict()[k].shape != pretrained_dict[k].shape: 
+
+                    print(k)
+                    pretrained_dict.pop(k)
+
+        # print(model.state_dict)
+        model.load_state_dict(pretrained_dict, strict=False)
+        print('Load from config is working!')
+
+
+
     device = torch.device(f"cuda:{rank}" if torch.cuda.is_available() else "cpu")
     model.to(device)
 

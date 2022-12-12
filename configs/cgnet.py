@@ -36,13 +36,13 @@ TRAIN_PIPELINES =[
 ]
 
 VAL_PIPELINES = [
-    # dict(type='Rescale', output_size=CROP_SIZE),
+    dict(type='Rescale', output_size=CROP_SIZE),
     dict(type='Normalization', mean=MEAN, std=STD),
     dict(type='ToTensor')
 ]
 
 TEST_PIPELINES = [
-    # dict(type='Rescale', output_size=CROP_SIZE),
+    dict(type='Rescale', output_size=CROP_SIZE),
     dict(type='Normalization', mean=MEAN, std=STD),
     dict(type='ToTensor')
 ]
