@@ -5,11 +5,18 @@ import os.path as osp
 from evaluate import evaluate
 from library import RunnerRegistry
 
+        
 @RunnerRegistry.register('SupervisedLearner')
 class SupervisedLearner(object):
-    def __init__(self, run_by='epoch'):
+    def __init__(self, run_by='epoch', patience=None, min_delta=0):
         
-        self.run_by = run_by 
+        self.run_by = run_by
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.best_loss = None
+        self.early_stop = False
+        self.val_loss_min = 100000
     
     def train(self, 
              cfg,
@@ -32,73 +39,82 @@ class SupervisedLearner(object):
         eval_interval = cfg['EVALUATION']['interval']
         checkpoint_interval = cfg['CHECKPOINT']['interval']
 
-        if self.run_by == 'epoch':
-
-            for epoch in range(cfg['EPOCHS']): # loop over the dataset multiple times
-
-                running_loss = 0.0
-                
-                for i, data in enumerate(data_loaders['train'], 0):
-                    # get the inputs; data is a list of [inputs, labels]
-                    inputs, labels = data['image'], data['segmap']
-
-                    inputs, labels = inputs.to(device), labels.to(device)
-
-                    # zero the parameter gradients
-                    optimizer.zero_grad()
-
-                    # forward + backward + optimize
-                    loss = model(inputs, labels)
-                    
-                    loss.backward()
-                    optimizer.step()
-                    scheduler.step()
-
-                    # print statistics
-                    running_loss += loss.item()
-                    
-                    if i % logger_interval == logger_interval-1:
-                        logger.info(
-                            f'[Epoch: {epoch + 1:5d}, Iteration: {i + 1:5d}] Loss: {running_loss / logger_interval:.3f}'
-                            )
-                        running_loss = 0.0
-
-                if i % eval_interval == eval_interval-1:
-                    evaluate(model, data_loaders['val'], device,  logger=logger)  
-
-                if i % checkpoint_interval == checkpoint_interval-1:
-                    save_path = osp.join(cfg['WORK_DIR'], f'checkpoint_epoch_{epoch}.pth')
-                    torch.save(model.state_dict(), save_path)
+        best_save_path = osp.join(cfg['WORK_DIR'], "best_checkpoint.pt")
+        graph_path = osp.join(cfg['WORK_DIR'], "runs")
     
-        running_loss = 0.0
-        generator = iter(data_loaders['train'])
 
-        for i in range(cfg['ITERATION']): # loop over the dataset multiple times
+        if self.run_by == 'epoch':
+            iteration = cfg['EPOCH'] * len(data_loaders['train'])
+            print('iteration: ', iteration)
+        elif self.run_by == 'iteration':
+            iteration = cfg['ITERATION']
+        else:
+            print('supported run by option: epoch, iteration')
+       
+
+        train_running_loss = 0.0
+        val_running_loss = 0.0
+        
+        train_generator = iter(data_loaders['train'])
+        val_generator = iter(data_loaders['val'])
+
+
+        for i in range(iteration): # loop over the dataset multiple times
             
             optimizer.zero_grad()
             
             try:
-                data = next(generator)
+                train_data = next(train_generator)
 
             except StopIteration: 
 
-                generator = iter(data_loaders['train'])
-                data = next(generator)
+                train_generator = iter(data_loaders['train'])
+                train_data = next(train_generator)
             
 
-            inputs, labels = data['image'], data['segmap']
+            inputs, labels = train_data['image'], train_data['segmap']
             inputs, labels = inputs.to(device), labels.to(device)
 
-            loss = model(inputs, labels)
-            loss.backward()
-            running_loss += loss.item()
+            train_loss = model(inputs, labels)
+            train_loss.backward()
+            train_running_loss += train_loss.item()
 
             optimizer.step()
             scheduler.step()
 
+
+            model.eval()
+
+            with torch.no_grad():
+                try:
+                    val_data = next(val_generator)
+
+                except StopIteration:
+
+                    val_generator = iter(data_loaders['val'])
+                    val_data = next(val_generator)
+
+                inputs, labels = val_data['image'], val_data['segmap']
+                inputs, labels = inputs.to(device), labels.to(device)
+
+                val_loss = model(inputs, labels)
+                val_running_loss += val_loss.item()
+
+
             if i % logger_interval == logger_interval-1:
-                logger.info(f'[Iteration: {i + 1:5d}] Loss: {running_loss / logger_interval:.3f}')
-                running_loss = 0.0
+                logger.info(f'[Iteration: {i + 1:5d}] Train Loss: {train_running_loss / logger_interval:.3f}')
+                logger.info(f'[Iteration: {i + 1:5d}] Val Loss: {val_running_loss / logger_interval:.3f}')
+
+                if self.patience:
+                    self.early_stopping(val_running_loss, model, best_save_path)
+
+                    if self.early_stop:
+                        print("Early stopping")
+                        break
+
+                train_running_loss = 0.0
+                val_running_loss = 0.0
+
 
             if is_dist: 
                 rank = model.device_ids[0]
@@ -125,6 +141,34 @@ class SupervisedLearner(object):
         logger.info('Finished Training')
 
 
+    def early_stopping(self, val_loss, model, path):
+
+        """
+        Early stopping to stop the training when the loss does not improve after certain epochs.
+
+        References:
+            [1] https://debuggercafe.com/using-learning-rate-scheduler-and-early-stopping-with-pytorch/
+            [2] https://quokkas.tistory.com/37
+        """
+
+        if self.best_loss == None:
+            self.best_loss = val_loss
+            print(f"Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}). Saving model ...")
+            torch.save(model.state_dict(), path)
+            self.val_loss_min = val_loss
+        elif self.best_loss - val_loss > self.min_delta:
+            self.best_loss = val_loss
+            print(f"Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}). Saving model ...")
+            torch.save(model.state_dict(), path)
+            self.val_loss_min = val_loss
+            self.counter = 0  # reset counter if validation loss improves
+        elif self.best_loss - val_loss < self.min_delta:
+            self.counter += 1
+            print(f"INFO: Early stopping counter {self.counter} of {self.patience}")
+            if self.counter >= self.patience:
+                print("INFO: Early stopping")
+                self.early_stop = True
+
 
     def eval(self,
              model, 
@@ -134,6 +178,3 @@ class SupervisedLearner(object):
 
         evaluate(model, data_loaders['val'], device, logger)  
 
-
-
-    

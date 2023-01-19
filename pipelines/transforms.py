@@ -1,15 +1,3 @@
-# To dos 
-# [v] rescale 
-# [v] random rescale 
-# [v] random crop 
-# [v] random flipLR
-# [v] random flipUD
-# [] negative sample 
-
-# [v] to tensor 
-# [v] normalization 
-
-
 import random
 
 import cv2 
