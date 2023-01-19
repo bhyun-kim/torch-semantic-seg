@@ -1,4 +1,8 @@
 # torch 
 # torchvision 
-# opencv-python 
-# jupyter notebook
+opencv-python 
+prettytable
+jupyter 
+tqdm
+torchsummary
+
